@@ -162,6 +162,20 @@ const TasksLists = () => {
     navigate("/");
   };
 
+
+  const groupTasksByDate = (entries) => {
+    if (!entries) return {};
+    return entries.reduce((acc, task) => {
+      const date = extractDate(task.start_time); // "YYYY-MM-DD"
+      if (!acc[date]) acc[date] = [];
+      acc[date].push(task);
+      return acc;
+    }, {});
+  };
+
+  const rowColors = ["white", "bg-gray-300"];
+
+
   return (
     <div className="p-6 relative">
       <div className="flex justify-between items-center mb-4">
@@ -172,17 +186,17 @@ const TasksLists = () => {
           </span>
         </h2>
         <div className="flex gap-2">
-        <button
-          onClick={openForm}
-          className="bg-green-600 cursor-pointer text-white px-3 py-1 rounded hover:bg-green-700 flex items-center gap-1"
-        >
-          <FaPlus /> Add Task
-        </button>
-        <button onClick={handleLogout} 
-        className="bg-red-600 cursor-pointer text-white px-3 py-1 rounded hover:bg-red-700 flex items-center gap-1"
-        >
-          Logout
-        </button>
+          <button
+            onClick={openForm}
+            className="bg-green-600 cursor-pointer text-white px-3 py-1 rounded hover:bg-green-700 flex items-center gap-1"
+          >
+            <FaPlus /> Add Task
+          </button>
+          <button onClick={handleLogout}
+            className="bg-red-600 cursor-pointer text-white px-3 py-1 rounded hover:bg-red-700 flex items-center gap-1"
+          >
+            Logout
+          </button>
         </div>
       </div>
 
@@ -200,46 +214,59 @@ const TasksLists = () => {
               <th className=" px-4 py-2">Action</th>
             </tr>
           </thead>
+
           <tbody>
             {tasks?.entries?.length > 0 ? (
-              tasks?.entries?.map((task, idx) => (
-                <tr
-                  key={idx}
-                  className={`text-center ${
-                    task.end_time ? "bg-green-100" : ""
-                  }`}
-                >
-                  <td className=" px-4 py-2">{idx + 1}</td>
-                  <td className=" px-4 py-2">{task.task_name}</td>
-                  <td className=" px-4 py-2">{extractDate(task.start_time)}</td>
-                  <td className=" px-4 py-2">{extractTime(task.start_time)}</td>
-                  <td className=" px-4 py-2">{extractTime(task.end_time)}</td>
-                  <td className=" px-4 py-2">{task.total_hours || "-"}</td>
-                  <td className=" px-4 py-2">{task.comment || "-"}</td>
-                  <td className=" px-4 py-2 flex justify-center gap-2">
-                    {task.end_time ? (
-                      <span className="text-green-700 font-bold">
-                        Completed
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => handleStop(idx)}
-                        className="bg-yellow-600 cursor-pointer text-white px-2 py-1 rounded hover:bg-yellow-700 flex items-center gap-1"
-                      >
-                        <FaStop /> Stop
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))
+              Object.entries(groupTasksByDate(tasks.entries)).map(
+                ([date, tasksForDate], dateIdx) => {
+                  const bgColor = rowColors[dateIdx % 2]; // alternate colors by date
+                  return (
+                    <React.Fragment key={date}>
+                      {tasksForDate.map((task, taskIdx) => (
+                        <tr
+                          key={task.entry_id || taskIdx}
+                          className={`text-center ${bgColor}`} // only alternating colors
+                        >
+                          <td className="px-4 py-2">{taskIdx + 1}</td>
+                          <td className="px-4 py-2">{task.task_name}</td>
+                          {taskIdx === 0 ? (
+                            <td className="px-4 py-2" rowSpan={tasksForDate.length}>
+                              {date}
+                            </td>
+                          ) : null}
+                          <td className="px-4 py-2">{extractTime(task.start_time)}</td>
+                          <td className="px-4 py-2">{extractTime(task.end_time)}</td>
+                          <td className="px-4 py-2">{task.total_hours || "-"}</td>
+                          <td className="px-4 py-2">{task.comment || "-"}</td>
+                          <td className="px-4 py-2 flex justify-center gap-2">
+                            {task.end_time ? (
+                              <span className="text-gray-700 font-bold">Completed</span>
+                            ) : (
+                              <button
+                                onClick={() => handleStop(taskIdx)}
+                                className="bg-yellow-600 cursor-pointer text-white px-2 py-1 rounded hover:bg-yellow-700 flex items-center gap-1"
+                              >
+                                <FaStop /> Stop
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </React.Fragment>
+                  );
+                }
+              )
             ) : (
               <tr>
-                <td colSpan="8" className=" px-4 py-2 text-center">
+                <td colSpan="8" className="px-4 py-2 text-center">
                   No tasks available
                 </td>
               </tr>
             )}
           </tbody>
+
+
+
         </table>
       </div>
 

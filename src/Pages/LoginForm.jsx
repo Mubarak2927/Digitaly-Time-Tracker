@@ -56,7 +56,9 @@ const LoginForm = () => {
         );
 
         localStorage.setItem("userId", JSON.stringify(data.data.user_id));
-        if (data.data.message) {
+        if (data.data.role == "admin") {
+          navigate("/dashboard");
+        } else {
           navigate("/taskslists");
         }
         setMessage(`Login successful with email: ${formData.email}`);

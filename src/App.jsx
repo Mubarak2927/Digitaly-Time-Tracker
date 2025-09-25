@@ -20,7 +20,13 @@ const App = () => {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LoginForm />}></Route>
-          <Route path="/dashboard" element={<Dashboard />} />
+
+          <Route path="/dashboard" element={
+            <PrivateRoute>
+              <Dashboard />
+            </PrivateRoute>
+          } />
+
           <Route
             path="/TasksLists"
             element={
@@ -29,9 +35,10 @@ const App = () => {
               </PrivateRoute>
             }
           />
+
           <Route path="/Signup" element={<Signup />} />
-          <Route path="/*" element={<Notfound/>} />
-          <Route path='/Admin' element={<AdminLogin/>}/>
+          <Route path="/*" element={<Notfound />} />
+          <Route path='/Admin' element={<AdminLogin />} />
         </Routes>
       </BrowserRouter>
     </>
