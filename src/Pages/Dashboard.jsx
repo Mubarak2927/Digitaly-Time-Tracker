@@ -171,7 +171,7 @@ const Dashboard = () => {
                 <thead className="bg-gray-300">
                   <tr>
                     <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
-                      #
+                      SI NO
                     </th>
                     <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
                       Task Name
