@@ -74,7 +74,7 @@ const LoginForm = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-900 px-4">
       <div className="bg-gray-800 rounded-3xl shadow-2xl p-8 sm:p-12 w-full max-w-md">
         <h2 className="text-3xl font-bold text-white text-center mb-8">
-          Employee Login
+          Login
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">

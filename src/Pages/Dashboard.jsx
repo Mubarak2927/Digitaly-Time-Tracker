@@ -2,11 +2,13 @@ import axios from "axios";
 import React, { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
 
   const [data, setData] = useState([]);
   const [user, setUser] = useState(null);
+  const navigate=useNavigate()
 
   const API = "https://timetracker-1-wix6.onrender.com";
 
@@ -90,18 +92,35 @@ const Dashboard = () => {
 
   const rowColors = ["bg-gray-100", "bg-gray-200"];
 
+  const adminLogOut=()=>{
+    navigate('/')
+  }
+  const addEmployee=()=>{
+    navigate("/Signup")
+  }
 
   return (
     <div className="p-6 font-sans">
       <div className="flex justify-between my-3">
         <h2 className="text-2xl font-bold mb-6">Admin Dashboard</h2>
-        <button className="bg-blue-600 px-2 rounded-lg text-white hover:bg-blue-800">
-          <a href="/Signup">Add Employee</a>
+        <div className=" flex  gap-3">
+          <button
+          onClick={adminLogOut}
+           className="bg-red-500 p-2 hover:bg-red-700 cursor-pointer text-white h-fit rounded-lg ">
+            Logout
+          </button>
+          <button
+          onClick={addEmployee}
+           className="bg-blue-600  cursor-pointer p-2 h-fit rounded-lg text-white hover:bg-blue-800">
+         Add Employee
         </button>
+        </div>
       </div>
 
-      {/* User Cards */}
-      <div className="flex flex-wrap gap-6">
+      <div className=" border-2">
+        <h1 className="font-bold bg-gray-600 p-2 text-white text-lg">Employee Details</h1>
+     
+      <div className="flex flex-wrap   p-3 ml-10   gap-6">
         {data?.map((user) => (
           <div
             key={user.user_id}
@@ -123,6 +142,7 @@ const Dashboard = () => {
           </div>
         ))}
       </div>
+       </div>
 
       {/* Selected User Details */}
       {user && (
