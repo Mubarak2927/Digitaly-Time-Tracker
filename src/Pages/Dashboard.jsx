@@ -103,10 +103,20 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="p-6 font-sans">
-      <div className="flex justify-between my-3">
-        <h2 className="text-2xl font-bold mb-6">Admin Dashboard</h2>
-        <div className=" flex  gap-3">
+    <div className=" p-6 font-sans h-screen bg-gray-300">
+      <div className="flex justify-between ">
+        <div className="bg-white  h-screen w-[30%]">
+          <div className="flex flex-col ml-[35%] mt-10">
+            <img src="https://www.pngmart.com/files/22/User-Avatar-Profile-PNG-Isolated-Clipart.png" 
+          alt="user profile"
+          className="w-20 h-20 bg-black rounded-full" />
+             <h1 className="ml-5">Admin</h1>
+          </div>
+          <div className="bg-gray-300 h-[80%] w-[70%] ml-15">
+
+          </div>
+        </div>
+        {/* <div className=" flex  gap-3">
           <button
             onClick={adminLogOut}
             className="bg-red-500 p-2 hover:bg-red-700 cursor-pointer text-white h-fit rounded-lg ">
@@ -117,7 +127,7 @@ const Dashboard = () => {
             className="bg-blue-600  cursor-pointer p-2 h-fit rounded-lg text-white hover:bg-blue-800">
             Add Employee
           </button>
-        </div>
+        </div> */}
       </div>
 
 
@@ -128,7 +138,7 @@ const Dashboard = () => {
         </div>
       ) : (
         // {/* User Cards */ }
-        <div div className="flex flex-wrap gap-6">
+        <div div className="flex flex-wrap gap-6 ml-[40%]">
           {data?.map((user) => (
             <div
               key={user.user_id}
