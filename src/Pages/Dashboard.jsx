@@ -7,6 +7,7 @@ const Dashboard = () => {
 
   const [data, setData] = useState([]);
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false)
 
   const API = "https://timetracker-1-wix6.onrender.com";
 
@@ -15,6 +16,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
+        setLoading(true)
         console.log(userId);
         const res = await axios.post(`${API}/admin/`,
           {
@@ -25,6 +27,8 @@ const Dashboard = () => {
         console.log(res);
       } catch (error) {
         console.error("Error fetching users:", error);
+      } finally {
+        setLoading(false)
       }
     };
 
@@ -100,142 +104,153 @@ const Dashboard = () => {
         </button>
       </div>
 
-      {/* User Cards */}
-      <div className="flex flex-wrap gap-6">
-        {data?.map((user) => (
-          <div
-            key={user.user_id}
-            className="border border-gray-300 rounded-md p-4 w-64 shadow-sm"
-          >
-            <h3 className="text-xl font-semibold mb-2">
-              {user.first_name} {user.last_name}
-            </h3>
-            <p className="mb-1 text-gray-700">Email: {user.email}</p>
-            <p className="mb-3 text-gray-700">
-              Task Entries: {user.entries.length}
-            </p>
-            <button
-              onClick={() => handleViewDetails(user)}
-              className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+
+      {loading ? (
+        <div className="flex justify-center items-center">
+          <div className="w-6 h-6 border-4 border-black border-t-transparent border-solid rounded-full animate-spin"></div>
+          <span className="ml-2 text-black">Loading...</span>
+        </div>
+      ) : (
+        // {/* User Cards */ }
+        <div div className="flex flex-wrap gap-6">
+          {data?.map((user) => (
+            <div
+              key={user.user_id}
+              className="border border-gray-300 rounded-md p-4 w-64 shadow-sm"
             >
-              View Details
-            </button>
-          </div>
-        ))}
-      </div>
+              <h3 className="text-xl font-semibold mb-2">
+                {user.first_name} {user.last_name}
+              </h3>
+              <p className="mb-1 text-gray-700">Email: {user.email}</p>
+              <p className="mb-3 text-gray-700">
+                Task Entries: {user.entries.length}
+              </p>
+              <button
+                onClick={() => handleViewDetails(user)}
+                className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+              >
+                View Details
+              </button>
+            </div>
+          ))}
+        </div>
+      )
+      }
 
       {/* Selected User Details */}
-      {user && (
-        <div className="mt-10">
-          <h2 className="text-2xl font-bold mb-4">User Details</h2>
-          <h3 className="text-xl font-semibold mb-1">
-            {user.first_name} {user.last_name}
-          </h3>
-          <p className="mb-6 text-gray-700">Email: {user.email}</p>
-          <div className="flex justify-between">
-            <h4 className="text-lg font-semibold mb-2">Task Entries</h4>
+      {
+        user && (
+          <div className="mt-10">
+            <h2 className="text-2xl font-bold mb-4">User Details</h2>
+            <h3 className="text-xl font-semibold mb-1">
+              {user.first_name} {user.last_name}
+            </h3>
+            <p className="mb-6 text-gray-700">Email: {user.email}</p>
+            <div className="flex justify-between">
+              <h4 className="text-lg font-semibold mb-2">Task Entries</h4>
 
-            <button
-              onClick={handleDownloadExcel}
-              className="mb-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-            >
-              Download Excel
-            </button>
-          </div>
-
-          {user.entries.length === 0 ? (
-            <p className="text-gray-600">No task entries available.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full border border-gray-300 divide-y divide-gray-200">
-                <thead className="bg-gray-300">
-                  <tr>
-                    <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
-                      #
-                    </th>
-                    <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
-                      Task Name
-                    </th>
-                    <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
-                      Date
-                    </th>
-                    <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
-                      Start Time
-                    </th>
-                    <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
-                      End Time
-                    </th>
-                    <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
-                      Total Hours
-                    </th>
-                    <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
-                      Status
-                    </th>
-                    <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
-                      Comment
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {user.entries.length === 0 ? (
-                    <tr>
-                      <td colSpan="7" className="px-4 py-2 text-center text-gray-600">
-                        No task entries available.
-                      </td>
-                    </tr>
-                  ) : (
-                    Object.entries(groupEntriesByDate(user.entries)).map(
-                      ([date, entriesForDate], dateIdx) => {
-                        const bgColor = rowColors[dateIdx % 2]; // alternate colors by date
-                        return (
-                          <React.Fragment key={date}>
-                            {entriesForDate.map((entry, idx) => (
-                              <tr key={entry.entry_id || idx} className={`${bgColor}`}>
-                                <td className="px-4 py-2 border border-gray-300 text-sm text-gray-700">
-                                  {idx + 1}
-                                </td>
-                                <td className="px-4 py-2 border border-gray-300 text-sm text-gray-700">
-                                  {entry.task_name}
-                                </td>
-                                {idx === 0 ? (
-                                  <td
-                                    className="px-4 py-2 border border-gray-300 text-sm text-gray-700"
-                                    rowSpan={entriesForDate.length}
-                                  >
-                                    {date}
-                                  </td>
-                                ) : null}
-                                <td className="px-4 py-2 border border-gray-300 text-sm text-gray-700">
-                                  {new Date(entry.start_time).toLocaleString()}
-                                </td>
-                                <td className="px-4 py-2 border border-gray-300 text-sm text-gray-700">
-                                  {entry.end_time ? new Date(entry.end_time).toLocaleString() : "-"}
-                                </td>
-                                <td className="px-4 py-2 border border-gray-300 text-sm text-gray-700">
-                                  {entry.total_hours || "-"}
-                                </td>
-                                <td className="px-4 py-2 border border-gray-300 text-sm text-gray-700">
-                                  {entry.status || "-"}
-                                </td>
-                                <td className="px-4 py-2 border border-gray-300 text-sm text-gray-700">
-                                  {entry.comment || "-"}
-                                </td>
-                              </tr>
-                            ))}
-                          </React.Fragment>
-                        );
-                      }
-                    )
-                  )}
-                </tbody>
-
-              </table>
+              <button
+                onClick={handleDownloadExcel}
+                className="mb-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+              >
+                Download Excel
+              </button>
             </div>
-          )}
-        </div>
-      )}
-    </div>
+
+            {user.entries.length === 0 ? (
+              <p className="text-gray-600">No task entries available.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full border border-gray-300 divide-y divide-gray-200">
+                  <thead className="bg-gray-300">
+                    <tr>
+                      <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
+                        #
+                      </th>
+                      <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
+                        Task Name
+                      </th>
+                      <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
+                        Date
+                      </th>
+                      <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
+                        Start Time
+                      </th>
+                      <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
+                        End Time
+                      </th>
+                      <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
+                        Total Hours
+                      </th>
+                      <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
+                        Status
+                      </th>
+                      <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
+                        Comment
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {user.entries.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" className="px-4 py-2 text-center text-gray-600">
+                          No task entries available.
+                        </td>
+                      </tr>
+                    ) : (
+                      Object.entries(groupEntriesByDate(user.entries)).map(
+                        ([date, entriesForDate], dateIdx) => {
+                          const bgColor = rowColors[dateIdx % 2]; // alternate colors by date
+                          return (
+                            <React.Fragment key={date}>
+                              {entriesForDate.map((entry, idx) => (
+                                <tr key={entry.entry_id || idx} className={`${bgColor}`}>
+                                  <td className="px-4 py-2 border border-gray-300 text-sm text-gray-700">
+                                    {idx + 1}
+                                  </td>
+                                  <td className="px-4 py-2 border border-gray-300 text-sm text-gray-700">
+                                    {entry.task_name}
+                                  </td>
+                                  {idx === 0 ? (
+                                    <td
+                                      className="px-4 py-2 border border-gray-300 text-sm text-gray-700"
+                                      rowSpan={entriesForDate.length}
+                                    >
+                                      {date}
+                                    </td>
+                                  ) : null}
+                                  <td className="px-4 py-2 border border-gray-300 text-sm text-gray-700">
+                                    {new Date(entry.start_time).toLocaleString()}
+                                  </td>
+                                  <td className="px-4 py-2 border border-gray-300 text-sm text-gray-700">
+                                    {entry.end_time ? new Date(entry.end_time).toLocaleString() : "-"}
+                                  </td>
+                                  <td className="px-4 py-2 border border-gray-300 text-sm text-gray-700">
+                                    {entry.total_hours || "-"}
+                                  </td>
+                                  <td className="px-4 py-2 border border-gray-300 text-sm text-gray-700">
+                                    {entry.status || "-"}
+                                  </td>
+                                  <td className="px-4 py-2 border border-gray-300 text-sm text-gray-700">
+                                    {entry.comment || "-"}
+                                  </td>
+                                </tr>
+                              ))}
+                            </React.Fragment>
+                          );
+                        }
+                      )
+                    )}
+                  </tbody>
+
+                </table>
+              </div>
+            )}
+          </div>
+        )
+      }
+    </div >
   );
 };
 

@@ -7,6 +7,7 @@ const LoginForm = () => {
   const [error, setErrors] = useState({});
   const [message, setMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false)
 
   const navigate = useNavigate();
 
@@ -47,6 +48,7 @@ const LoginForm = () => {
     e.preventDefault();
     if (validate()) {
       try {
+        setLoading(true)
         const data = await axios.post(
           "https://timetracker-1-wix6.onrender.com/signin/",
           {
@@ -64,6 +66,8 @@ const LoginForm = () => {
         setMessage(`Login successful with email: ${formData.email}`);
       } catch (error) {
         setMessage(`${error}`);
+      } finally {
+        setLoading(false)
       }
     }
   };
@@ -124,9 +128,10 @@ const LoginForm = () => {
 
           <button
             type="submit"
-            className="w-full cursor-pointer py-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl text-white font-semibold hover:scale-105 transform transition"
+            disabled={loading}
+            className={`w-full cursor-pointer py-3  rounded-xl  font-semibold hover:scale-105 transform transition ${loading ? "bg-blue-300 cursor-not-allowed text-black " : "bg-gradient-to-r from-blue-500 to-purple-600 text-white"}`}
           >
-            Login
+            {loading ? "Loading....." : "Login"}
           </button>
         </form>
       </div>
