@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginForm from "./Pages/LoginForm";
 import Tasklists from "./Pages/Tasklists";
 import Signup from "./Pages/Signup";
-import Dashboard from "./Pages/Dashboard";
+import Dashboard from "./Pages/Admin/Dashboard";
 import Notfound from "./Pages/Notfound";
 import AdminLogin from "./Pages/AdminLogin";
 import EmployeePanel from "./Pages/Employee/Index";
