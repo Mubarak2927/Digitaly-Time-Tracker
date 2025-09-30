@@ -10,6 +10,8 @@ const Dashboard = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false)
 
+  const navigate = useNavigate()
+
   const API = "https://timetracker-1-wix6.onrender.com";
 
   const userId = JSON.parse(localStorage.getItem("userId"))
@@ -98,6 +100,7 @@ const Dashboard = () => {
   const adminLogOut = () => {
     navigate('/')
   }
+
   const addEmployee = () => {
     navigate("/Signup")
   }

@@ -6,6 +6,7 @@ import Signup from "./Pages/Signup";
 import Dashboard from "./Pages/Dashboard";
 import Notfound from "./Pages/Notfound";
 import AdminLogin from "./Pages/AdminLogin";
+import EmployeePanel from "./Pages/Employee/Index";
 
 
 const App = () => {
@@ -31,12 +32,17 @@ const App = () => {
             path="/TasksLists"
             element={
               <PrivateRoute>
-                <Tasklists />
+                <EmployeePanel />
               </PrivateRoute>
             }
           />
 
-          <Route path="/Signup" element={<Signup />} />
+          <Route path="/Signup" element={
+            <PrivateRoute>
+              <Signup />
+            </PrivateRoute>
+          } />
+
           <Route path="/*" element={<Notfound />} />
           <Route path='/Admin' element={<AdminLogin />} />
         </Routes>
