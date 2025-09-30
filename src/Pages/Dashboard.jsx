@@ -2,6 +2,7 @@ import axios from "axios";
 import React, { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
 
@@ -94,14 +95,29 @@ const Dashboard = () => {
 
   const rowColors = ["bg-gray-100", "bg-gray-200"];
 
+  const adminLogOut = () => {
+    navigate('/')
+  }
+  const addEmployee = () => {
+    navigate("/Signup")
+  }
 
   return (
     <div className="p-6 font-sans">
       <div className="flex justify-between my-3">
         <h2 className="text-2xl font-bold mb-6">Admin Dashboard</h2>
-        <button className="bg-blue-600 px-2 rounded-lg text-white hover:bg-blue-800">
-          <a href="/Signup">Add Employee</a>
-        </button>
+        <div className=" flex  gap-3">
+          <button
+            onClick={adminLogOut}
+            className="bg-red-500 p-2 hover:bg-red-700 cursor-pointer text-white h-fit rounded-lg ">
+            Logout
+          </button>
+          <button
+            onClick={addEmployee}
+            className="bg-blue-600  cursor-pointer p-2 h-fit rounded-lg text-white hover:bg-blue-800">
+            Add Employee
+          </button>
+        </div>
       </div>
 
 
