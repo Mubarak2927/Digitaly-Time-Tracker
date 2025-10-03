@@ -7,6 +7,7 @@ import Dashboard from "./Pages/Admin/Dashboard";
 import Notfound from "./Pages/Notfound";
 import AdminLogin from "./Pages/AdminLogin";
 import EmployeePanel from "./Pages/Employee/Index";
+import TaskCreate from "./Pages/Admin/Component/TaskCreate";
 
 
 const App = () => {
@@ -45,6 +46,7 @@ const App = () => {
 
           <Route path="/*" element={<Notfound />} />
           <Route path='/Admin' element={<AdminLogin />} />
+          <Route path="/project/:id" element={<TaskCreate />} />
         </Routes>
       </BrowserRouter>
     </>
