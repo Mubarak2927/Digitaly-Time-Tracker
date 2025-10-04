@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import TasksLists from "../Tasklists";
 
 const API = "https://timetracker-1-wix6.onrender.com";
 
 const AssignedTask = () => {
     const [tasks, setTasks] = useState([]);
-    const [runningEntry, setRunningEntry] = useState(null); // currently running task
-    const [history, setHistory] = useState([]); // completed sessions
+    const [runningEntry, setRunningEntry] = useState(null);
+    const [refreshTrigger, setRefreshTrigger] = useState(false);
 
     const empId = JSON.parse(localStorage.getItem("userId"));
 
     useEffect(() => {
         fetchUserTasks();
-    }, []);
+    }, [refreshTrigger]);
 
-    // ✅ Fetch tasks assigned to user
     const fetchUserTasks = async () => {
         try {
             const res = await axios.get(`${API}/projectmanagement/projects/usertask/${empId}/`);
@@ -23,28 +23,29 @@ const AssignedTask = () => {
                     id: task.task_id,
                     projectName: project.project_name,
                     taskName: task.task_name,
+                    status: task.status,
                 }))
             );
             setTasks(formatted);
+
         } catch (err) {
-            console.error("Error fetching user tasks", err);
+            console.error(err);
         }
     };
 
-    // ✅ Start task (clock in)
     const handleStartTask = async (taskId) => {
         try {
             const res = await axios.post(`${API}/clockin/${empId}/`, { task_id: taskId });
             if (res.data.message) {
                 alert(res.data.message);
-                setRunningEntry(res.data); // store current running entry
+                setRunningEntry(res.data);
+                setRefreshTrigger((prev) => !prev);
             }
         } catch (err) {
-            console.error("Error starting task", err);
+            console.error(err);
         }
     };
 
-    // ✅ Stop task (clock out)
     const handleStopTask = async () => {
         try {
             const res = await axios.post(`${API}/clockout/${empId}/`, {
@@ -53,87 +54,64 @@ const AssignedTask = () => {
             });
             if (res.data.message) {
                 alert(res.data.message);
-                setRunningEntry(null); // reset running task
-                setHistory((prev) => [...prev, res.data]); // add to history table
+                setRunningEntry(null);
+                setRefreshTrigger((prev) => !prev);
             }
         } catch (err) {
-            console.error("Error stopping task", err);
+            console.error(err);
         }
     };
 
     return (
-        <div className="px-6 py-10">
-            <h2 className="text-xl font-bold mb-8 text-center">Assigned Tasks</h2>
+        <>
+            <TasksLists refresh={refreshTrigger} />
+            <div className="px-6 py-10 bg-gray-900">
+                <h2 className="text-3xl font-bold mb-10 text-center text-white">
+                    Assigned Tasks
+                </h2>
 
-            {/* Task Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {tasks.length > 0 ? (
-                    tasks.map((task) => (
-                        <div
-                            key={task.id}
-                            className="bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-700 hover:shadow-cyan-500/20 transition"
-                        >
-                            <h3 className="text-xl font-semibold text-cyan-400 mb-2">
-                                {task.projectName}
-                            </h3>
-                            <p className="text-gray-300 mb-4">Task: {task.taskName}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    {tasks.length > 0 ? (
+                        tasks.map((task, index) => (
+                            <div
+                                key={task.id}
+                                className="relative bg-gray-800 border border-cyan-400 rounded-2xl p-6 shadow-lg hover:shadow-cyan-500/50 transition duration-300 group"
+                            >
+                                {/* gradient overlay on hover */}
+                                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 opacity-0 group-hover:opacity-10 transition duration-300"></div>
 
-                            {runningEntry && runningEntry.task_id === task.id ? (
-                                <button
-                                    onClick={handleStopTask}
-                                    className="mt-5 w-full py-2 bg-gradient-to-r from-red-500 to-red-700 rounded-xl text-white font-semibold hover:scale-105 transition"
-                                >
-                                    Stop Task
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={() => handleStartTask(task.id)}
-                                    className="mt-5 w-full py-2 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-xl text-white font-semibold hover:scale-105 transition"
-                                    disabled={!!runningEntry} // allow only 1 task running
-                                >
-                                    Start Task
-                                </button>
-                            )}
-                        </div>
-                    ))
-                ) : (
-                    <p className="text-gray-400 text-center col-span-full">
-                        No tasks assigned yet.
-                    </p>
-                )}
+                                <h3 className="text-xl font-semibold text-cyan-400 mb-2 z-10 relative">
+                                    {task.projectName}
+                                </h3>
+                                <p className="text-gray-300 mb-5 z-10 relative">Task: {task.taskName}</p>
+
+                                {task.status === "running" ? (
+                                    <button
+                                        // onClick={handleStopTask}
+                                        className="w-full py-2 cursor-not-allowed rounded-xl text-white font-semibold bg-gradient-to-r from-red-500 to-red-700 hover:scale-105 transition duration-200 z-10 relative"
+                                    >
+                                        Running
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => handleStartTask(task.id)}
+                                        className={`w-full py-2 rounded-xl text-white font-semibold bg-gradient-to-r from-cyan-400 to-blue-500 hover:scale-105 transition duration-200 z-10 relative ${!!runningEntry ? "opacity-50 cursor-not-allowed" : ""
+                                            }`}
+                                        disabled={!!runningEntry}
+                                    >
+                                        Start Task
+                                    </button>
+                                )}
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-gray-400 text-center col-span-full">
+                            No tasks assigned yet.
+                        </p>
+                    )}
+                </div>
             </div>
-
-            {/* History Table */}
-            <div className="mt-10 bg-white p-6 rounded-xl shadow-md">
-                <h3 className="text-lg font-bold mb-4">Task History</h3>
-                {history.length > 0 ? (
-                    <table className="w-full border-collapse">
-                        <thead>
-                            <tr className="bg-gray-100 text-left">
-                                <th className="p-3 border">Task Name</th>
-                                <th className="p-3 border">Start Time</th>
-                                <th className="p-3 border">End Time</th>
-                                <th className="p-3 border">Total Hours</th>
-                                <th className="p-3 border">Comment</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {history.map((h, i) => (
-                                <tr key={i} className="border-t">
-                                    <td className="p-3 border">{h.task_name}</td>
-                                    <td className="p-3 border">{h.start_time}</td>
-                                    <td className="p-3 border">{h.end_time}</td>
-                                    <td className="p-3 border">{h.total_hours}</td>
-                                    <td className="p-3 border">{h.comment}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                ) : (
-                    <p className="text-gray-500">No history yet.</p>
-                )}
-            </div>
-        </div>
+        </>
     );
 };
 

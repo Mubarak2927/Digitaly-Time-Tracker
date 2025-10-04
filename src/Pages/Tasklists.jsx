@@ -1,69 +1,61 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
-import { FaPlus, FaStop } from "react-icons/fa";
+import { FaPlus, FaStop, FaSignOutAlt } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
 const TIMEZONE = "Asia/Kolkata";
-
 const api = "https://timetracker-1-wix6.onrender.com";
 
-const TasksLists = () => {
+const TasksLists = ({ refresh }) => {
   const [tasks, setTasks] = useState();
   const [formOpen, setFormOpen] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
-  const [selectedTaskIndex, setSelectedTaskIndex] = useState(null);
+  const [selectedEntryId, setSelectedEntryId] = useState(null);
   const [commentText, setCommentText] = useState("");
   const [newTask, setNewTask] = useState({ name: "", startDate: "" });
   const [formattedDate, setFormattedDate] = useState("");
   const [formattedTime, setFormattedTime] = useState("");
-  const [selectedEntryId, setSelectedEntryId] = useState(null);
 
   const navigate = useNavigate();
+  const userId = JSON.parse(localStorage.getItem("userId")) || [];
 
   const getCurrentIndiaTime = () => {
     const now = new Date();
-    const optionsDate = {
+    const date = new Intl.DateTimeFormat("en-GB", {
       timeZone: TIMEZONE,
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
-    };
-    const optionsTime = {
+    }).format(now);
+    const time = new Intl.DateTimeFormat("en-US", {
       timeZone: TIMEZONE,
       hour12: true,
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
-    };
-
-    const date = new Intl.DateTimeFormat("en-GB", optionsDate).format(now);
-    const time = new Intl.DateTimeFormat("en-US", optionsTime).format(now);
-
+    }).format(now);
     return { date, time };
   };
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    const timer = setInterval(() => {
       const { date, time } = getCurrentIndiaTime();
       setFormattedDate(date);
       setFormattedTime(time);
     }, 1000);
-    return () => clearInterval(interval);
+    return () => clearInterval(timer);
   }, []);
-
-  const userId = JSON.parse(localStorage.getItem("userId")) || [];
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [refresh]);
 
   const fetchData = async () => {
     try {
-      const data = await axios.get(`${api}/user/${userId}/`);
-      setTasks(data.data);
-      console.log(data);
-    } catch (error) {
-      console.log(error);
+      const res = await axios.get(`${api}/user/${userId}/`);
+      setTasks(res.data);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -73,44 +65,27 @@ const TasksLists = () => {
 
   const openForm = () => {
     const { date } = getCurrentIndiaTime();
-    const formatted = date.split("/").reverse().join("-"); // dd/mm/yyyy -> yyyy-mm-dd
-    setNewTask({
-      name: "",
-      startDate: formatted,
-    });
+    const formatted = date.split("/").reverse().join("-");
+    setNewTask({ name: "", startDate: formatted });
     setFormOpen(true);
   };
 
   const closeForm = () => setFormOpen(false);
-
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setNewTask({ ...newTask, [e.target.name]: e.target.value });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!newTask.name) {
-      alert("Please enter Task Name");
-      return;
-    }
-
-    const { time: startTime } = getCurrentIndiaTime();
-
-    const userId = JSON.parse(localStorage.getItem("userId"));
-
-    console.log(userId, "User ID");
-
+    if (!newTask.name) return alert("Please enter a task name");
     try {
-      const createTask = await axios.post(`${api}/clockin/${userId}/`, {
+      await axios.post(`${api}/clockin/${userId}/`, {
         task_name: newTask.name,
       });
-      console.log(createTask, "");
       fetchData();
-    } catch (error) {
-      console.log(error);
+      setFormOpen(false);
+    } catch (err) {
+      console.error(err);
     }
-
-    setFormOpen(false);
   };
 
   const handleStop = (index) => {
@@ -123,218 +98,226 @@ const TasksLists = () => {
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
-
     if (!selectedEntryId) return;
-
     try {
-      const res = await axios.post(`${api}/clockout/${userId}/`, {
+      await axios.post(`${api}/clockout/${userId}/`, {
         entry_id: selectedEntryId,
         comment: commentText,
       });
-
-      console.log("Clock out success:", res.data);
-
-      // Optionally refresh task list
       fetchData();
-    } catch (error) {
-      console.error("Clock out failed:", error);
+    } catch (err) {
+      console.error(err);
     }
-
-    // Reset UI state
     setCommentText("");
     setCommentOpen(false);
     setSelectedEntryId(null);
   };
 
-  const extractDate = (dateTimeStr) => {
-    if (!dateTimeStr) return "-";
-    return new Date(dateTimeStr).toISOString().split("T")[0]; // returns YYYY-MM-DD
-  };
+  const extractDate = (dateTimeStr) =>
+    dateTimeStr ? new Date(dateTimeStr).toISOString().split("T")[0] : "-";
 
-  const extractTime = (dateTimeStr) => {
-    if (!dateTimeStr) return "-";
-    const time = new Date(dateTimeStr).toTimeString().split(" ")[0]; // returns HH:MM:SS
-    return time;
-  };
+  const extractTime = (dateTimeStr) =>
+    dateTimeStr ? new Date(dateTimeStr).toTimeString().split(" ")[0] : "-";
 
   const handleLogout = () => {
     localStorage.removeItem("userId");
     navigate("/");
   };
 
-
   const groupTasksByDate = (entries) => {
     if (!entries) return {};
     return entries.reduce((acc, task) => {
-      const date = extractDate(task.start_time); // "YYYY-MM-DD"
+      const date = extractDate(task.start_time);
       if (!acc[date]) acc[date] = [];
       acc[date].push(task);
       return acc;
     }, {});
   };
 
-  const rowColors = ["white", "bg-gray-300"];
-
-
   return (
-    <div className="p-6 relative">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">
-          Tasks List{" "}
-          <span className="ml-2 text-sm">
+    <div className="p-6 relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
+      {/* Header Section */}
+      <div className="flex justify-between items-center mb-8 bg-gray-800/60 backdrop-blur-md p-4 rounded-xl shadow-lg border border-gray-700">
+        <div>
+          <h2 className="text-2xl font-bold tracking-wide">
+            Task Dashboard
+          </h2>
+          <p className="text-sm text-gray-400">
             {formattedDate} | {formattedTime}
-          </span>
-        </h2>
-        <div className="flex gap-2">
-          <button
+          </p>
+        </div>
+        <div className="flex gap-3">
+          {/* <button
             onClick={openForm}
-            className="bg-green-600 cursor-pointer text-white px-3 py-1 rounded hover:bg-green-700 flex items-center gap-1"
+            className="bg-gradient-to-r from-green-500 to-emerald-600 px-4 py-2 rounded-xl font-medium flex items-center gap-2 hover:scale-105 transition"
           >
             <FaPlus /> Add Task
-          </button>
-          <button onClick={handleLogout}
-            className="bg-red-600 cursor-pointer text-white px-3 py-1 rounded hover:bg-red-700 flex items-center gap-1"
+          </button> */}
+          <button
+            onClick={handleLogout}
+            className="bg-gradient-to-r from-red-500 to-rose-600 px-4 py-2 rounded-xl font-medium flex items-center gap-2 hover:scale-105 transition"
           >
-            Logout
+            <FaSignOutAlt /> Logout
           </button>
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="table-auto w-full border border-gray-400">
+      {/* Task Table */}
+      <div className="overflow-x-auto bg-gray-800/50 border border-gray-700 rounded-xl shadow-xl backdrop-blur-sm">
+        <table className="table-auto w-full text-sm md:text-base">
           <thead>
-            <tr className="bg-gray-200">
-              <th className=" px-4 py-2">SI No</th>
-              <th className=" px-4 py-2">Task Name</th>
-              <th className=" px-4 py-2">Date</th>
-              <th className=" px-4 py-2">Start Time</th>
-              <th className=" px-4 py-2">End Time</th>
-              <th className=" px-4 py-2">Total Timing</th>
-              <th className=" px-4 py-2">Comments</th>
-              <th className=" px-4 py-2">Action</th>
+            <tr className="bg-gray-700/80 text-gray-200 uppercase text-xs md:text-sm">
+              <th className="px-4 py-3">#</th>
+              <th className="px-4 py-3">Task Name</th>
+              <th className="px-4 py-3">Date</th>
+              <th className="px-4 py-3">Start Time</th>
+              <th className="px-4 py-3">End Time</th>
+              <th className="px-4 py-3">Duration</th>
+              <th className="px-4 py-3">Comment</th>
+              <th className="px-4 py-3 text-center">Action</th>
             </tr>
           </thead>
-
           <tbody>
             {tasks?.entries?.length > 0 ? (
               Object.entries(groupTasksByDate(tasks.entries)).map(
-                ([date, tasksForDate], dateIdx) => {
-                  const bgColor = rowColors[dateIdx % 2]; // alternate colors by date
-                  return (
-                    <React.Fragment key={date}>
-                      {tasksForDate.map((task, taskIdx) => (
-                        <tr
-                          key={task.entry_id || taskIdx}
-                          className={`text-center ${bgColor}`} // only alternating colors
-                        >
-                          <td className="px-4 py-2">{taskIdx + 1}</td>
-                          <td className="px-4 py-2">{task.task_name}</td>
-                          {taskIdx === 0 ? (
-                            <td className="px-4 py-2" rowSpan={tasksForDate.length}>
-                              {date}
-                            </td>
-                          ) : null}
-                          <td className="px-4 py-2">{extractTime(task.start_time)}</td>
-                          <td className="px-4 py-2">{extractTime(task.end_time)}</td>
-                          <td className="px-4 py-2">{task.total_hours || "-"}</td>
-                          <td className="px-4 py-2">{task.comment || "-"}</td>
-                          <td className="px-4 py-2 flex justify-center gap-2">
-                            {task.end_time ? (
-                              <span className="text-gray-700 font-bold">Completed</span>
-                            ) : (
-                              <button
-                                onClick={() => handleStop(taskIdx)}
-                                className="bg-yellow-600 cursor-pointer text-white px-2 py-1 rounded hover:bg-yellow-700 flex items-center gap-1"
-                              >
-                                <FaStop /> Stop
-                              </button>
-                            )}
+                ([date, tasksForDate]) => (
+                  <React.Fragment key={date}>
+                    {tasksForDate.map((task, i) => (
+                      <tr
+                        key={task.entry_id || i}
+                        className="text-center border-b border-gray-700 hover:bg-gray-700/30 transition"
+                      >
+                        <td className="px-4 py-2">{i + 1}</td>
+                        <td className="px-4 py-2 font-medium text-cyan-300">
+                          {task.task_name}
+                        </td>
+                        {i === 0 && (
+                          <td
+                            rowSpan={tasksForDate.length}
+                            className="px-4 py-2 text-gray-400"
+                          >
+                            {date}
                           </td>
-                        </tr>
-                      ))}
-                    </React.Fragment>
-                  );
-                }
+                        )}
+                        <td className="px-4 py-2 text-gray-300">
+                          {extractTime(task.start_time)}
+                        </td>
+                        <td className="px-4 py-2 text-gray-300">
+                          {extractTime(task.end_time)}
+                        </td>
+                        <td className="px-4 py-2 text-gray-200">
+                          {task.total_hours || "-"}
+                        </td>
+                        <td className="px-4 py-2 text-gray-400">
+                          {task.comment || "-"}
+                        </td>
+                        <td className="px-4 py-2 flex justify-center gap-2">
+                          {task.end_time ? (
+                            <span className="text-green-400 font-semibold">
+                              Completed
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleStop(i)}
+                              className="bg-gradient-to-r from-yellow-500 to-amber-600 px-3 py-1.5 rounded-lg text-black font-medium flex items-center gap-2 hover:scale-105 transition"
+                            >
+                              <FaStop /> Stop
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </React.Fragment>
+                )
               )
             ) : (
               <tr>
-                <td colSpan="8" className="px-4 py-2 text-center">
+                <td
+                  colSpan="8"
+                  className="text-center py-6 text-gray-400 font-medium"
+                >
                   No tasks available
                 </td>
               </tr>
             )}
           </tbody>
-
-
-
         </table>
       </div>
 
+      {/* Add Task Modal */}
       {formOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg w-[90%] max-w-md p-6 shadow-lg relative">
-            <h2 className="text-xl text-center font-bold mb-4">Add Task</h2>
-            <button
-              onClick={closeForm}
-              className="absolute text-2xl top-3 cursor-pointer right-3 text-gray-600 hover:text-gray-800"
-            >
-              ✖
-            </button>
-
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50">
+          <div className="bg-gray-900 text-white rounded-2xl p-6 w-[90%] max-w-md border border-gray-700 shadow-2xl">
+            <h2 className="text-xl font-bold mb-4 text-center text-cyan-400">
+              Add New Task
+            </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <input
                 type="text"
                 name="name"
                 value={newTask.name}
                 onChange={handleChange}
-                placeholder="Task Name"
-                className="w-full border  rounded-md p-2"
-                required
+                placeholder="Enter task name"
+                className="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-400"
               />
               <input
                 type="date"
                 name="startDate"
                 value={newTask.startDate}
                 readOnly
-                className="w-full border rounded-md p-2"
+                className="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-gray-400"
               />
-              <button
-                type="submit"
-                className="w-full bg-green-600 cursor-pointer text-white rounded-md py-2 hover:bg-green-700 transition"
-              >
-                Add Task
-              </button>
+              <div className="flex justify-end gap-3 mt-4">
+                <button
+                  type="button"
+                  onClick={closeForm}
+                  className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 hover:scale-105 transition"
+                >
+                  Add Task
+                </button>
+              </div>
             </form>
           </div>
         </div>
       )}
 
+      {/* Comment Modal */}
       {commentOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg w-[90%] max-w-md p-6 shadow-lg relative">
-            <h2 className="text-xl text-center font-bold mb-4">Add Comment</h2>
-            <button
-              onClick={() => setCommentOpen(false)}
-              className="absolute text-2xl top-3 cursor-pointer right-3 text-gray-600 hover:text-gray-800"
-            >
-              ✖
-            </button>
-
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50">
+          <div className="bg-gray-900 text-white rounded-2xl p-6 w-[90%] max-w-md border border-gray-700 shadow-2xl">
+            <h2 className="text-xl font-bold mb-4 text-center text-amber-400">
+              Add Comment
+            </h2>
             <form onSubmit={handleCommentSubmit} className="space-y-4">
               <textarea
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 placeholder="Enter your comment"
-                className="w-full border rounded-md p-2"
+                className="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white focus:outline-none focus:border-amber-400"
                 rows="3"
                 required
               />
-              <button
-                type="submit"
-                className="w-full bg-blue-600 cursor-pointer text-white rounded-md py-2 hover:bg-blue-700 transition"
-              >
-                Save Comment
-              </button>
+              <div className="flex justify-end gap-3 mt-4">
+                <button
+                  type="button"
+                  onClick={() => setCommentOpen(false)}
+                  className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-400 to-yellow-500 hover:scale-105 transition"
+                >
+                  Save Comment
+                </button>
+              </div>
             </form>
           </div>
         </div>

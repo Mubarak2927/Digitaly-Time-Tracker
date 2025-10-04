@@ -4,9 +4,8 @@ import TasksLists from '../Tasklists'
 
 const EmployeePanel = () => {
     return (
-        <div>
+        <div>            
             <AssignedTask />
-            <TasksLists />
         </div>
     )
 }
