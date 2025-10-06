@@ -56,7 +56,11 @@ const Dashboard = () => {
     }, {});
   };
 
-  const adminLogOut = () => navigate("/");
+  const handleLogout = () => {
+    localStorage.removeItem("userId");
+    localStorage.removeItem("role");
+    navigate("/");
+  };
   const addEmployee = () => navigate("/Signup");
 
   return (
@@ -87,7 +91,7 @@ const Dashboard = () => {
         </nav>
 
         <button
-          onClick={adminLogOut}
+          onClick={handleLogout}
           className="flex items-center gap-3 px-6 py-3 cursor-pointer bg-red-600 hover:bg-red-700 transition-all"
         >
           <FaSignOutAlt /> Logout
@@ -97,7 +101,7 @@ const Dashboard = () => {
       {/* Main content */}
       <main className="flex-1 bg-gray-100 overflow-y-auto">
         {/* Header */}
-       
+
         {/* Content Section */}
         <section className="p-8 min-h-[calc(100vh-80px)]">
           {activeTab === "employees" && (

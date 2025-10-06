@@ -1,5 +1,5 @@
 import axios from "axios";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const LoginForm = () => {
@@ -7,9 +7,19 @@ const LoginForm = () => {
   const [error, setErrors] = useState({});
   const [message, setMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+
+  // 🔹 If already logged in, redirect based on role
+  useEffect(() => {
+    const role = localStorage.getItem("role");
+    if (role === "admin") {
+      navigate("/dashboard");
+    } else if (role === "user") {
+      navigate("/taskslists");
+    }
+  }, [navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -48,8 +58,8 @@ const LoginForm = () => {
     e.preventDefault();
     if (validate()) {
       try {
-        setLoading(true)
-        const data = await axios.post(
+        setLoading(true);
+        const res = await axios.post(
           "https://timetracker-1-wix6.onrender.com/signin/",
           {
             email: formData.email,
@@ -57,17 +67,26 @@ const LoginForm = () => {
           }
         );
 
-        localStorage.setItem("userId", JSON.stringify(data.data.user_id));
-        if (data.data.role == "admin") {
+        const { user_id, role } = res.data;
+
+        // 🔹 Store both userId and role in localStorage
+        localStorage.setItem("userId", JSON.stringify(user_id));
+        localStorage.setItem("role", role);
+
+        setMessage(`Login successful with email: ${formData.email}`);
+
+        // 🔹 Redirect based on role
+        if (role === "admin") {
           navigate("/dashboard");
         } else {
           navigate("/taskslists");
         }
-        setMessage(`Login successful with email: ${formData.email}`);
+
+        console.log("Role:", role);
       } catch (error) {
-        setMessage(`${error}`);
+        setMessage("Invalid credentials");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
   };
@@ -124,12 +143,19 @@ const LoginForm = () => {
             </div>
           </div>
 
-          {message && <div><p className="text-green-400 text-center">{message}</p></div>}
+          {message && (
+            <div>
+              <p className="text-green-400 text-center">{message}</p>
+            </div>
+          )}
 
           <button
             type="submit"
             disabled={loading}
-            className={`w-full cursor-pointer py-3  rounded-xl  font-semibold hover:scale-105 transform transition ${loading ? "bg-blue-300 cursor-not-allowed text-black " : "bg-gradient-to-r from-blue-500 to-purple-600 text-white"}`}
+            className={`w-full cursor-pointer py-3 rounded-xl font-semibold hover:scale-105 transform transition ${loading
+              ? "bg-blue-300 cursor-not-allowed text-black"
+              : "bg-gradient-to-r from-blue-500 to-purple-600 text-white"
+              }`}
           >
             {loading ? "Loading....." : "Login"}
           </button>
