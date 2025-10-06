@@ -19,6 +19,12 @@ const TasksLists = () => {
   const [tablePage, setTablePage] = useState(1);
   const [cardPage, setCardPage] = useState(1);
 
+  const [projects, setProjects] = useState([]);
+  const [selectedProject, setSelectedProject] = useState("");
+  const [taskInput, setTaskInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [openModal, setOpenModal] = useState(false);
+
   const entriesPerPage = 10;
   const navigate = useNavigate();
   const userId = JSON.parse(localStorage.getItem("userId"));
@@ -42,19 +48,35 @@ const TasksLists = () => {
     return { date, time };
   };
 
+
+  const fetchProjects = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/projectmanagement/projects/`);
+      setProjects(res.data.data);
+      console.log(res, "124454");
+
+    } catch (err) {
+      console.error("Error fetching projects:", err);
+    }
+  };
+
   useEffect(() => {
+
+    fetchProjects()
+
     const timer = setInterval(() => {
       const { date, time } = getCurrentIndiaTime();
       setFormattedDate(date);
       setFormattedTime(time);
     }, 1000);
     return () => clearInterval(timer);
+
   }, []);
 
   useEffect(() => {
     fetchUserTasks();
     fetchAssignedTasks();
-  }, [refreshTrigger]);
+  }, [refreshTrigger, openModal]);
 
   const fetchUserTasks = async () => {
     try {
@@ -139,6 +161,59 @@ const TasksLists = () => {
   const currentCards = taskList.slice(cardFirstIndex, cardLastIndex);
   const totalCardPages = Math.ceil(taskList.length / entriesPerPage);
 
+
+  // 🔹 Create and assign task automatically
+  const handleCreateAndAssign = async (e) => {
+    e.preventDefault();
+    if (!selectedProject || !taskInput) {
+      alert("Please select a project and enter task name");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const adminId = JSON.parse(localStorage.getItem("userId"));
+      const empId = adminId; // same user auto-assign
+
+      console.log(adminId, empId);
+
+
+      // 1️⃣ Create Task
+      const createRes = await axios.post(
+        `${API_BASE}/projectmanagement/projects/tasks/`,
+        {
+          admin_id: adminId,
+          project_id: selectedProject,
+          task: taskInput,
+        }
+      );
+
+      if (createRes.data.message) {
+        const newTaskId = createRes.data.data.task_id;
+
+        // 2️⃣ Assign it to the same employee
+        await axios.post(`${API_BASE}/projectmanagement/projects/tasks/assign/`, {
+          admin_id: adminId,
+          task_id: newTaskId,
+          emp_id: empId,
+        });
+
+        alert("✅ Task Created & Assigned Successfully!");
+        setTaskInput("");
+        setSelectedProject("");
+        setOpenModal(false);
+      }
+    } catch (err) {
+      console.error("Error creating/assigning task:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (openModal) fetchProjects();
+  }, [openModal]);
+
   return (
     <div className="p-6 bg-gray-900 text-white min-h-screen">
       {/* Header */}
@@ -147,12 +222,20 @@ const TasksLists = () => {
           <h2 className="text-2xl font-bold tracking-wide">Task Dashboard</h2>
           <p className="text-sm text-gray-400">{formattedDate} | {formattedTime}</p>
         </div>
-        <button
-          onClick={handleLogout}
-          className="bg-gradient-to-r from-red-500 to-rose-600 px-4 py-2 rounded-xl font-medium flex items-center gap-2 hover:scale-105 transition"
-        >
-          <FaSignOutAlt /> Logout
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setOpenModal(true)}
+            className="px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition"
+          >
+            ➕ Add Task
+          </button>
+          <button
+            onClick={handleLogout}
+            className="bg-gradient-to-r from-red-500 to-rose-600 px-4 py-2 rounded-xl font-medium flex items-center gap-2 hover:scale-105 transition"
+          >
+            <FaSignOutAlt /> Logout
+          </button>
+        </div>
       </div>
 
       {/* Task Table */}
@@ -297,6 +380,80 @@ const TasksLists = () => {
           </div>
         )}
       </div>
+
+
+      {openModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50">
+          {/* 🔹 Modal Box */}
+          <div className="bg-white w-full max-w-md rounded-t-2xl p-6 animate-slideUp">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-800">Add Task</h2>
+              <button
+                onClick={() => setOpenModal(false)}
+                className="text-gray-500 hover:text-red-500 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateAndAssign} className="space-y-4">
+              {/* Project Dropdown */}
+              <div>
+                <label className="block text-gray-700 mb-1 font-medium">
+                  Select Project
+                </label>
+                <select
+                  value={selectedProject}
+                  onChange={(e) => setSelectedProject(e.target.value)}
+                  className="w-full text-black p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="" className="text-black">Select Project</option>
+                  {projects.map((proj) => (
+                    <option key={proj.project_id} value={proj.project_id} className="text-black">
+                      {proj.project_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Task Input */}
+              <div>
+                <label className="block text-gray-700 mb-1 font-medium">
+                  Task Name
+                </label>
+                <input
+                  type="text"
+                  value={taskInput}
+                  onChange={(e) => setTaskInput(e.target.value)}
+                  placeholder="Enter task name"
+                  className="w-full text-black p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className={`w-full py-2 rounded-lg text-white font-semibold transition ${loading
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
+                  }`}
+              >
+                {loading ? "Processing..." : "Create & Assign Task"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+      <style>{`
+        @keyframes slideUp {
+          from { transform: translateY(100%); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slideUp {
+          animation: slideUp 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };
